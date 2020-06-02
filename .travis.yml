@@ -93,6 +93,17 @@ jobs:
     if: branch != master OR type == pull_request
     arch: ppc64le
     env:
+    - ARCH_FLAGS=""
+    addons:
+      apt:
+        packages:
+        - gcc
+        - g++
+
+  - name: "ppc64le-native"
+    if: branch != master OR type == pull_request
+    arch: ppc64le
+    env:
     - ARCH_FLAGS="-mcpu=native"
     addons:
       apt:
