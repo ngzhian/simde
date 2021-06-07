@@ -36,6 +36,7 @@
 #define SIMDE_ARM_NEON_QDMULL_H
 
 #include "types.h"
+#include "movl.h"
 
 HEDLEY_DIAGNOSTIC_PUSH
 SIMDE_DISABLE_UNWANTED_DIAGNOSTICS
@@ -76,6 +77,22 @@ simde_int32x4_t
 simde_vqdmull_s16(simde_int16x4_t a, simde_int16x4_t b) {
   #if defined(SIMDE_ARM_NEON_A32V7_NATIVE)
     return vqdmull_s16(a, b);
+  #elif defined(SIMDE_WASM_SIMD128_NATIVE)
+    simde_int32x4_private r_;
+    v128_t mul = wasm_i32x4_mul(simde_vmovl_s16(a), simde_vmovl_s16(b));
+    // check for overflows if we double
+    v128_t underflow = wasm_i32x4_lt(mul, wasm_i32x4_splat(-1073741824));
+    v128_t overflow = wasm_i32x4_ge(mul, wasm_i32x4_splat(1073741824));
+    // >= 1073741824
+    // < -1073741824
+    v128_t mins = wasm_i32x4_splat(INT32_MIN);
+    v128_t maxs = wasm_i32x4_splat(INT32_MAX);
+
+    v128_t doubled = wasm_i32x4_shl(mul, 1);
+    v128_t r0 = wasm_v128_bitselect(mins, doubled, underflow);
+    v128_t r1 = wasm_v128_bitselect(maxs, r0, overflow);
+    r_.v128 = r1;
+    return simde_int32x4_from_private(r_);
   #else
     simde_int32x4_private r_;
     simde_int16x4_private

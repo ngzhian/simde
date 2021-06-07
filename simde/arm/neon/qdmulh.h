@@ -113,6 +113,16 @@ simde_int16x8_t
 simde_vqdmulhq_s16(simde_int16x8_t a, simde_int16x8_t b) {
   #if defined(SIMDE_ARM_NEON_A32V7_NATIVE)
     return vqdmulhq_s16(a, b);
+  #elif defined(SIMDE_WASM_SIMD128_NATIVE)
+    simde_int32x4_t lo = simde_vqdmull_s16(simde_vget_low_s16(a), simde_vget_low_s16(b));
+    simde_int32x4_t hi = simde_vqdmull_s16(simde_vget_high_s16(a), simde_vget_high_s16(b));
+    simde_int32x4_private lo_ = simde_int32x4_to_private(lo);
+    simde_int32x4_private hi_ = simde_int32x4_to_private(hi);
+    v128_t r = wasm_i8x16_shuffle(lo_.v128, hi_.v128,
+        2, 3, 6, 7, 10, 11, 14, 15, 18, 19, 22, 23, 26, 27, 30, 31);
+    simde_int16x8_private r_;
+    r_.v128 = r;
+    return simde_int16x8_from_private(r_);
   #else
     return simde_vcombine_s16(simde_vqdmulh_s16(simde_vget_low_s16(a), simde_vget_low_s16(b)),
                               simde_vqdmulh_s16(simde_vget_high_s16(a), simde_vget_high_s16(b)));
